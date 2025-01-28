@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Three.js SGM Loader with Export</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+    }
+    canvas {
+      display: block;
+    }
+    #fileInputContainer, #exportButtonContainer {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 10;
+    }
+    #exportButtonContainer {
+      top: 50px;
+    }
+  </style>
+</head>
+<body>
+  <div id="fileInputContainer">
+    <input type="file" id="fileInput" accept=".sgm" />
+  </div>
+  <div id="exportButtonContainer">
+    <button id="exportButton">Export as GLB</button>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/GLTFExporter.js"></script> <!-- Add the GLTFExporter script -->
+  <script type="module">
+    import { SGMLoader } from './SGMLoader.js';
+
+    // Initialize Scene, Camera, and Renderer
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    // Lighting
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.5);
+    scene.add(ambientLight);
+
+    // Load the SGM model using file picker
+    const loader = new SGMLoader();
+    const fileInput = document.getElementById('fileInput');
+
+    fileInput.addEventListener('change', (event) => {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          const content = e.target.result;  // This is an ArrayBuffer
+
+          // Pass the ArrayBuffer directly to the loader without progress
+          loader.load(
+            content,  // Pass the ArrayBuffer directly to the loader
+            function (object) {
+              scene.add(object);  // Model loaded successfully, add to scene
+            },
+            null,  // No need for progress tracking
+            function (error) {
+              console.error('An error occurred while loading the model:', error);
+            }
+          );
+        };
+        reader.readAsArrayBuffer(file);
+      }
+    });
+
+    // Camera position
+    camera.position.z = 5;
+
+    // Animation loop
+    function animate() {
+      requestAnimationFrame(animate);
+      renderer.render(scene, camera);
+    }
+
+    animate();
+
+    // Handle window resize
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // Export function
+    document.getElementById('exportButton').addEventListener('click', () => {
+      const exporter = new THREE.GLTFExporter();  // Use the exported GLTFExporter class from Three.js
+      exporter.parse(
+        scene,
+        (result) => {
+          const blob = new Blob([result], { type: 'application/octet-stream' });
+          const link = document.createElement('a');
+          link.href = URL.createObjectURL(blob);
+          link.download = 'scene.glb';
+          link.click();
+          URL.revokeObjectURL(link.href);
+        },
+        { binary: true } // Set to false for GLTF format
+      );
+    });
+  </script>
+</body>
+</html>
