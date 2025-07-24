@@ -12,21 +12,31 @@
     canvas {
       display: block;
     }
-    #fileInputContainer, #exportButtonContainer {
+    #fileInputContainer, #folderInputContainer, #exportButtonContainer {
       position: absolute;
       top: 10px;
       left: 10px;
       z-index: 10;
     }
+    #folderInputContainer {
+      top: 40px;
+    }
     #exportButtonContainer {
-      top: 50px;
+      top: 70px;
     }
   </style>
 </head>
 <body>
   <div id="fileInputContainer">
-    <input type="file" id="fileInput" accept=".sgm" multiple />
+    <button id="selectFilesButton">Select Files</button>
+    <input type="file" id="fileInput" accept=".sgm" multiple style="display:none" />
   </div>
+  
+  <div id="folderInputContainer">
+    <button id="selectFoldersButton">Select Folders</button>
+    <input type="file" id="folderInput" webkitdirectory multiple style="display:none" />
+  </div>
+
   <div id="exportButtonContainer">
     <button id="exportButton">Export as GLB</button>
   </div>
@@ -36,61 +46,73 @@
   <script type="module">
     import { SGMLoader } from './SGMLoader.js';
 
-    // Initialize Scene, Camera, and Renderer
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     const renderer = new THREE.WebGLRenderer();
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
-    // Lighting
     const ambientLight = new THREE.AmbientLight(0xffffff, 1.5);
     scene.add(ambientLight);
 
-    // Load the SGM model using file picker
     const loader = new SGMLoader();
-    const fileInput = document.getElementById('fileInput');
 
+    // Elements
+    const fileInput = document.getElementById('fileInput');
+    const folderInput = document.getElementById('folderInput');
+    const selectFilesButton = document.getElementById('selectFilesButton');
+    const selectFoldersButton = document.getElementById('selectFoldersButton');
+
+    // Trigger hidden inputs when buttons are clicked
+    selectFilesButton.addEventListener('click', () => fileInput.click());
+    selectFoldersButton.addEventListener('click', () => folderInput.click());
+
+    // Handle multiple file selection
     fileInput.addEventListener('change', (event) => {
       [...event.target.files].forEach(file => {
         if (file.name.toLowerCase().endsWith('.sgm')) {
           const reader = new FileReader();
           reader.onload = (e) => {
-            loader.load(
-              e.target.result,  // ArrayBuffer
-              (object) => {
-                scene.add(object);
-                console.log(`Loaded: ${file.name}`);
-              },
-              null,
-              (error) => {
-                console.error(`Error loading ${file.name}:`, error);
-              }
-            );
+            loader.load(e.target.result, object => {
+              scene.add(object);
+              console.log(`Loaded file: ${file.name}`);
+            });
           };
           reader.readAsArrayBuffer(file);
         }
       });
     });
 
-    // Camera position
+    // Handle folder selection (loads all .sgm files inside)
+    folderInput.addEventListener('change', (event) => {
+      [...event.target.files].forEach(file => {
+        if (file.name.toLowerCase().endsWith('.sgm')) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            loader.load(e.target.result, object => {
+              scene.add(object);
+              console.log(`Loaded from folder: ${file.name}`);
+            });
+          };
+          reader.readAsArrayBuffer(file);
+        }
+      });
+    });
+
     camera.position.z = 5;
 
-    // Animation loop
     function animate() {
       requestAnimationFrame(animate);
       renderer.render(scene, camera);
     }
     animate();
 
-    // Handle window resize
     window.addEventListener('resize', () => {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
     });
 
-    // Export function
     document.getElementById('exportButton').addEventListener('click', () => {
       const exporter = new THREE.GLTFExporter();
       exporter.parse(
