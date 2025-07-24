@@ -32,7 +32,7 @@
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/GLTFExporter.js"></script> <!-- Add the GLTFExporter script -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/GLTFExporter.js"></script>
   <script type="module">
     import { SGMLoader } from './SGMLoader.js';
 
@@ -52,26 +52,25 @@
     const fileInput = document.getElementById('fileInput');
 
     fileInput.addEventListener('change', (event) => {
-      const file = event.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = function (e) {
-          const content = e.target.result;  // This is an ArrayBuffer
-
-          // Pass the ArrayBuffer directly to the loader without progress
-          loader.load(
-            content,  // Pass the ArrayBuffer directly to the loader
-            function (object) {
-              scene.add(object);  // Model loaded successfully, add to scene
-            },
-            null,  // No need for progress tracking
-            function (error) {
-              console.error('An error occurred while loading the model:', error);
-            }
-          );
-        };
-        reader.readAsArrayBuffer(file);
-      }
+      [...event.target.files].forEach(file => {
+        if (file.name.toLowerCase().endsWith('.sgm')) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            loader.load(
+              e.target.result,  // ArrayBuffer
+              (object) => {
+                scene.add(object);
+                console.log(`Loaded: ${file.name}`);
+              },
+              null,
+              (error) => {
+                console.error(`Error loading ${file.name}:`, error);
+              }
+            );
+          };
+          reader.readAsArrayBuffer(file);
+        }
+      });
     });
 
     // Camera position
@@ -82,7 +81,6 @@
       requestAnimationFrame(animate);
       renderer.render(scene, camera);
     }
-
     animate();
 
     // Handle window resize
@@ -94,7 +92,7 @@
 
     // Export function
     document.getElementById('exportButton').addEventListener('click', () => {
-      const exporter = new THREE.GLTFExporter();  // Use the exported GLTFExporter class from Three.js
+      const exporter = new THREE.GLTFExporter();
       exporter.parse(
         scene,
         (result) => {
@@ -105,7 +103,7 @@
           link.click();
           URL.revokeObjectURL(link.href);
         },
-        { binary: true } // Set to false for GLTF format
+        { binary: true }
       );
     });
   </script>
