@@ -109,7 +109,7 @@
         if (child.type === 'AmbientLight' || child.type === 'Camera') return;
 
         const cam = new THREE.PerspectiveCamera(100, 1, 0.1, 1000);
-        cam.position.set(child.position.x, child.position.y, child.position.z - 3); // FRONT of model (negative Z)
+        cam.position.set(child.position.x, child.position.y - 0.05, child.position.z + 0.85); // FRONT of model (negative Z)
         cam.lookAt(child.position);
         cam.name = `Camera_for_Model_${index + 1}`;
         scene.add(cam);
