@@ -57,37 +57,54 @@
 
     const loader = new SGMLoader();
 
+    // Positioning
     let loadedCount = 0;
-    const spacing = 3;
+    const spacing = 0.75;
 
+    // Elements
     const fileInput = document.getElementById('fileInput');
     const folderInput = document.getElementById('folderInput');
     const selectFilesButton = document.getElementById('selectFilesButton');
     const selectFoldersButton = document.getElementById('selectFoldersButton');
 
+    // Trigger hidden inputs when buttons clicked
     selectFilesButton.addEventListener('click', () => fileInput.click());
     selectFoldersButton.addEventListener('click', () => folderInput.click());
 
-    function loadFile(file) {
-      if (!file.name.toLowerCase().endsWith('.sgm')) return;
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        loader.load(e.target.result, object => {
-          object.position.x = loadedCount * spacing;
-          scene.add(object);
-          console.log(`Loaded: ${file.name} at x=${object.position.x}`);
-          loadedCount++;
-        });
-      };
-      reader.readAsArrayBuffer(file);
-    }
-
+    // Load from selected files
     fileInput.addEventListener('change', (event) => {
-      [...event.target.files].forEach(loadFile);
+      [...event.target.files].forEach(file => {
+        if (file.name.toLowerCase().endsWith('.sgm')) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            loader.load(e.target.result, object => {
+              object.position.x = loadedCount * spacing;
+              scene.add(object);
+              console.log(`Loaded file: ${file.name} at x=${object.position.x}`);
+              loadedCount++;
+            });
+          };
+          reader.readAsArrayBuffer(file);
+        }
+      });
     });
 
+    // Load from selected folders
     folderInput.addEventListener('change', (event) => {
-      [...event.target.files].forEach(loadFile);
+      [...event.target.files].forEach(file => {
+        if (file.name.toLowerCase().endsWith('.sgm')) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            loader.load(e.target.result, object => {
+              object.position.x = loadedCount * spacing;
+              scene.add(object);
+              console.log(`Loaded folder file: ${file.name} at x=${object.position.x}`);
+              loadedCount++;
+            });
+          };
+          reader.readAsArrayBuffer(file);
+        }
+      });
     });
 
     camera.position.z = 5;
@@ -105,16 +122,6 @@
     });
 
     document.getElementById('exportButton').addEventListener('click', () => {
-      scene.children.forEach((child, index) => {
-        if (child.type === 'AmbientLight' || child.type === 'Camera') return;
-
-        const cam = new THREE.PerspectiveCamera(100, 1, 0.1, 1000);
-        cam.position.set(child.position.x, child.position.y - 0.05, child.position.z = 0.85); // FRONT of model (negative Z)
-        cam.lookAt(child.position);
-        cam.name = `Camera_for_Model_${index + 1}`;
-        scene.add(cam);
-      });
-
       const exporter = new THREE.GLTFExporter();
       exporter.parse(
         scene,
@@ -122,7 +129,7 @@
           const blob = new Blob([result], { type: 'application/octet-stream' });
           const link = document.createElement('a');
           link.href = URL.createObjectURL(blob);
-          link.download = 'scene_with_cameras.glb';
+          link.download = 'scene.glb';
           link.click();
           URL.revokeObjectURL(link.href);
         },
